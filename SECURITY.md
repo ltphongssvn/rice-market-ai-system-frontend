@@ -1,6 +1,6 @@
 # Security Best Practices Implementation
 
-~/code/ltphongssvn/AC215_ERP_FOR_SMES/SECURITY.md
+~/code/ltphongssvn/rice-market-ai-system-frontend/SECURITY.md
 
 ## Secret Management Implementation
 
@@ -8,7 +8,7 @@
 
 **Installation:**
 ```bash
-uv pip install pre-commit detect-secrets
+pip install pre-commit detect-secrets
 ```
 
 **Configuration (.pre-commit-config.yaml):**
@@ -19,7 +19,7 @@ repos:
     hooks:
       - id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: .*\.lock|.*\.log|.*\.pyc
+        exclude: .*\.lock|.*\.log|.*\.pyc|node_modules
 ```
 
 **Activation:**
@@ -28,31 +28,32 @@ detect-secrets scan > .secrets.baseline
 pre-commit install
 ```
 
-### 2. Secrets Remediation Performed
+### 2. Initial Security Scan Results
 
-| File | Issue | Fix |
-|------|-------|-----|
-| `src/services/rag-orchestrator/src/core/tests/verify_openai_integration.py` | Hardcoded OpenAI API key | Replaced with `os.getenv('OPENAI_API_KEY')` |
-| `src/services/nl-sql-service/docker-compose.yml` | Hardcoded PostgreSQL password | Changed to `${POSTGRES_PASSWORD:-localdev123}` |
-| `src/services/start_all_microservices.py` | Hardcoded database password | Changed to `os.getenv("POSTGRES_PASSWORD", "postgres")` |
+**Scan Date:** October 29, 2025
 
-### 3. Environment Variables Required
+| Status | Details |
+|--------|---------|
+| ✅ Clean | No hardcoded secrets detected in codebase |
+| Files Scanned | All JavaScript/JSX source files in `src/` |
+| Baseline Created | `.secrets.baseline` with 0 results |
 
-Create `.env` file (never commit):
+### 3. Environment Variables Best Practices
+
+For this frontend project, use `.env.local` (already gitignored):
 ```bash
-OPENAI_API_KEY=your_key_here
-GOOGLE_API_KEY=your_key_here
-POSTGRES_PASSWORD=your_password_here
-PGADMIN_PASSWORD=your_password_here
-WANDB_API_KEY=your_key_here
+VITE_API_BASE_URL=your_api_url_here
+VITE_API_KEY=your_key_here
 ```
+
+**Note:** Vite exposes env vars prefixed with `VITE_` to client code.
 
 ### 4. Pre-commit Workflow
 
-Every commit now automatically:
+Every commit automatically:
 1. Scans for secrets using detect-secrets
 2. Blocks commit if new secrets found
-3. Updates `.secrets.baseline` for allowed patterns
+3. References `.secrets.baseline` for allowed patterns
 
 **Manual scan:**
 ```bash
@@ -61,11 +62,12 @@ pre-commit run --all-files
 
 ### 5. Team Guidelines
 
-- Never commit `.env` files
-- Use environment variables for all credentials
-- Run `pre-commit install` after cloning
-- Review `.secrets.baseline` changes carefully
+- Never commit `.env.local` or `.env` files
+- Use `VITE_` prefix for environment variables
+- Run `pre-commit install` after cloning repository
+- Review `.secrets.baseline` changes in pull requests
 - Rotate any accidentally exposed keys immediately
+- Keep `node_modules` excluded from secret scanning
 
 ## Verification
 ```bash
@@ -73,4 +75,4 @@ $ pre-commit run --all-files
 Detect secrets...........................................................Passed
 ```
 
-All secrets removed and pre-commit protection active.
+**Status:** Repository is clean with active pre-commit protection.

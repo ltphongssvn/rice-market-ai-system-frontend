@@ -1,10 +1,13 @@
 # Rice Market AI System Frontend
 
+Live Demo: https://kiwi.thanhphongle.net/
+
 ## Project Description
 
 This React-based web application is for the frontend UI for the Rice Market AI System - Natural Language SQL, RAG, and Time-Series Forecasting application designed to provide intelligent analysis and forecasting capabilities for rice market operations. You can refer to the Rice Market AI System - Natural Language SQL, RAG, and Time-Series Forecasting here:
-GitHub: https://github.com/ltphongssvn/ac215e115groupproject
-Website: https://ac215e115groupproject.thanhphongle.net/
+
+GitHub: https://github.com/ltphongssvn/ac215e115groupproject <br>
+Website: https://ac215e115groupproject.thanhphongle.net/ <br>
 
 This single-page application demonstrates modern React development practices while simulating integration with a microservices architecture that would typically include Natural Language SQL processing, Document Search with RAG (Retrieval-Augmented Generation), and Time-Series Forecasting capabilities.
 

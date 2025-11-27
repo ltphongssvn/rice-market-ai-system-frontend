@@ -1,6 +1,5 @@
 // src/services/ragService.js
 // RAG Orchestrator Service API integration (Port 8002)
-
 import API_CONFIG, { apiFetch } from './api.js';
 
 /**
@@ -11,17 +10,19 @@ import API_CONFIG, { apiFetch } from './api.js';
  */
 export const queryRAG = async (query, maxResults = 5) => {
   const url = `${API_CONFIG.RAG_URL}/rag/query`;
-  
   const response = await apiFetch(url, {
     method: 'POST',
     body: JSON.stringify({ query, max_results: maxResults }),
   });
-  
+
   // Map backend response to frontend expected format
+  // Backend returns: retrieved_documents, answer, confidence, query, query_type, metadata
   return {
     answer: response.answer,
-    sources: response.sources || [],
+    sources: response.retrieved_documents || [],
     confidence: response.confidence || 0,
+    queryType: response.query_type,
+    metadata: response.metadata || {},
   };
 };
 

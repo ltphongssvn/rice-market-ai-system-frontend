@@ -1,64 +1,58 @@
 // src/pages/Dashboard.jsx
+// Dashboard page with real data from NL-SQL backend
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { getDashboardStats } from '../services/dashboardService.js';
 
 function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [marketStats, setMarketStats] = useState(null);
+    const [error, setError] = useState(null);
 
-    // useEffect to fetch initial data on component mount (satisfies startup requirement)
     useEffect(() => {
         const loadDashboardData = async () => {
             setIsLoading(true);
+            setError(null);
 
             try {
-                // Check localStorage first for cached data
+                // Check localStorage first for cached data (5 minute cache)
                 const cachedData = localStorage.getItem('dashboardStats');
                 if (cachedData) {
                     const parsedData = JSON.parse(cachedData);
-                    // If cached data exists and is less than 1 hour old, use it
-                    if (parsedData.timestamp > Date.now() - 3600000) {
+                    if (parsedData.timestamp > Date.now() - 300000) { // 5 minutes
                         setMarketStats(parsedData.stats);
                         setIsLoading(false);
                         return;
                     }
                 }
 
-                // Simulate network request for fresh data
-                // In production, this would call your actual API
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Fetch real data from NL-SQL service
+                const freshStats = await getDashboardStats();
 
-                // Mock market statistics data
-                const freshStats = {
-                    currentPrice: 45.50,
-                    priceChange: 2.3,
-                    totalInventory: 15420,
-                    activeSuppliers: 47,
-                    recentTransactions: 124,
-                    lastUpdated: new Date().toLocaleString()
-                };
-
-                // Store in localStorage for future visits
+                // Store in localStorage for caching
                 localStorage.setItem('dashboardStats', JSON.stringify({
                     stats: freshStats,
                     timestamp: Date.now()
                 }));
 
                 setMarketStats(freshStats);
-            } catch (error) {
-                console.error('Failed to load dashboard data:', error);
-                // Even on error, show the dashboard but without stats
-                setMarketStats(null);
+            } catch (err) {
+                console.error('Failed to load dashboard data:', err);
+                setError('Failed to load dashboard data. Please check if services are running.');
+                // Fallback to cached data if available
+                const cachedData = localStorage.getItem('dashboardStats');
+                if (cachedData) {
+                    setMarketStats(JSON.parse(cachedData).stats);
+                }
             } finally {
                 setIsLoading(false);
             }
         };
 
         loadDashboardData();
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-    // Show loading spinner while fetching data (satisfies loading status display requirement)
     if (isLoading) {
         return (
             <div className="dashboard-container">
@@ -72,28 +66,31 @@ function Dashboard() {
             <h1>Rice Market AI System</h1>
             <p>Welcome to the intelligent ERP system for rice market analysis</p>
 
-            {/* Conditionally render market stats if available */}
+            {error && (
+                <div className="error-message">{error}</div>
+            )}
+
             {marketStats && (
                 <div className="market-overview">
                     <h2>Market Overview</h2>
                     <div className="stats-grid">
                         <div className="stat-card">
                             <h3>Current Price</h3>
-                            <p className="stat-value">${marketStats.currentPrice}/kg</p>
+                            <p className="stat-value">${marketStats.currentPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/kg</p>
                             <p className="stat-change">
                                 {marketStats.priceChange > 0 ? '↑' : '↓'} {Math.abs(marketStats.priceChange)}%
                             </p>
                         </div>
                         <div className="stat-card">
                             <h3>Total Inventory</h3>
-                            <p className="stat-value">{marketStats.totalInventory.toLocaleString()} kg</p>
+                            <p className="stat-value">{marketStats.totalInventory.toLocaleString()} records</p>
                         </div>
                         <div className="stat-card">
-                            <h3>Active Suppliers</h3>
+                            <h3>Active Customers</h3>
                             <p className="stat-value">{marketStats.activeSuppliers}</p>
                         </div>
                         <div className="stat-card">
-                            <h3>Recent Transactions</h3>
+                            <h3>Total Shipments</h3>
                             <p className="stat-value">{marketStats.recentTransactions}</p>
                         </div>
                     </div>

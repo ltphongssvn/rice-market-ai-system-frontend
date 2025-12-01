@@ -1,29 +1,49 @@
 // src/pages/DocumentSearch.jsx
+// Frontend page integrated with RAG Orchestrator API (port 8002)
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { queryRAG, checkHealth, uploadDocument, getDocuments } from '../services/ragService.js';
 
 function DocumentSearch() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [documents, setDocuments] = useState([]);
+    const [searchResult, setSearchResult] = useState(null);
     const [uploadedFiles, setUploadedFiles] = useState([]);
-    const [selectedDoc, setSelectedDoc] = useState(null);
-    const [summary, setSummary] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [isSummarizing, setIsSummarizing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+    const [error, setError] = useState('');
+    const [serviceStatus, setServiceStatus] = useState('checking');
 
-    // Component that takes children props as required by checklist
-    const DocumentCard = ({ children, document, onSelect }) => (
-        <div className="document-card" onClick={() => onSelect(document)}>
-            {children}
-            <h3>{document.title}</h3>
-            <p>{document.excerpt}</p>
-            <span className="relevance">Relevance: {(document.relevance * 100).toFixed(0)}%</span>
-        </div>
-    );
+    // Check service health and load existing documents on mount
+    useEffect(() => {
+        const initializeService = async () => {
+            try {
+                const health = await checkHealth();
+                setServiceStatus(health.status === 'healthy' ? 'online' : 'offline');
+
+                // Load existing indexed documents from backend
+                if (health.status === 'healthy') {
+                    const docs = await getDocuments();
+                    if (docs.sources && docs.sources.length > 0) {
+                        setUploadedFiles(docs.sources.map((source, idx) => ({
+                            id: `existing-${idx}`,
+                            name: source,
+                            status: 'ready',
+                            fromBackend: true,
+                        })));
+                    }
+                }
+            } catch (err) {
+                console.error('RAG service initialization failed:', err);
+                setServiceStatus('offline');
+            }
+        };
+
+        initializeService();
+    }, []);
 
     // Handle drag events for file upload
     const handleDrag = (e) => {
@@ -41,129 +61,96 @@ function DocumentSearch() {
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
-
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             handleFiles(e.dataTransfer.files);
         }
     };
 
-    // Handle file selection from input
+    // Handle file selection
     const handleFileSelect = (e) => {
         if (e.target.files && e.target.files[0]) {
             handleFiles(e.target.files);
         }
     };
 
-    // Process uploaded files
+    // Process and upload files to RAG backend
     const handleFiles = async (files) => {
         setIsUploading(true);
-        const newFiles = [];
+        setError('');
 
         for (let file of files) {
-            // Validate file type
             const validTypes = ['application/pdf', 'text/plain', 'text/markdown',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'audio/mpeg', 'audio/mp3'];
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
             if (!validTypes.includes(file.type) && !file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
                 console.warn(`Unsupported file type: ${file.type}`);
+                setError(`Unsupported file type: ${file.name}`);
                 continue;
             }
 
-            // In production, this would upload to your backend
-            // For now, we'll simulate the upload process
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            newFiles.push({
-                id: Date.now() + Math.random(),
+            // Add file with uploading status
+            const fileId = Date.now() + Math.random();
+            setUploadedFiles(prev => [...prev, {
+                id: fileId,
                 name: file.name,
                 size: file.size,
                 type: file.type,
                 uploadDate: new Date().toISOString(),
-                status: 'processing', // processing, ready, error
-                embeddings: null
-            });
+                status: 'uploading',
+            }]);
+
+            try {
+                // Upload to RAG backend
+                const result = await uploadDocument(file);
+
+                if (result.success) {
+                    // Update status to ready
+                    setUploadedFiles(prev => prev.map(f =>
+                        f.id === fileId ? { ...f, status: 'ready', chunksIndexed: result.chunks_indexed } : f
+                    ));
+                } else {
+                    // Update status to failed
+                    setUploadedFiles(prev => prev.map(f =>
+                        f.id === fileId ? { ...f, status: 'failed' } : f
+                    ));
+                    setError(`Failed to index: ${file.name}`);
+                }
+            } catch (err) {
+                console.error('Upload failed:', err);
+                setUploadedFiles(prev => prev.map(f =>
+                    f.id === fileId ? { ...f, status: 'failed' } : f
+                ));
+                setError(`Upload failed: ${err.message}`);
+            }
         }
 
-        setUploadedFiles([...uploadedFiles, ...newFiles]);
-
-        // Simulate processing delay (creating embeddings)
-        setTimeout(() => {
-            setUploadedFiles(prev => prev.map(f =>
-                newFiles.find(nf => nf.id === f.id)
-                    ? {...f, status: 'ready'}
-                    : f
-            ));
-            setIsUploading(false);
-            setShowUploadModal(false);
-        }, 2000);
+        setIsUploading(false);
+        setShowUploadModal(false);
     };
 
+    // Handle search with real RAG API call
     const handleSearch = async (e) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
-        try {
-            // Simulate RAG vector search across both uploaded docs and database
-            await new Promise(resolve => setTimeout(resolve, 800));
+        setError('');
+        setSearchResult(null);
 
-            // Mock search results combining uploaded docs and database
-            setDocuments([
-                {
-                    id: 1,
-                    title: 'Q3 Rice Market Analysis Report',
-                    excerpt: 'Comprehensive analysis of rice market trends in Q3 2024...',
-                    relevance: 0.95,
-                    source: 'database',
-                    content: 'Full document content would be retrieved here...'
-                },
-                {
-                    id: 2,
-                    title: uploadedFiles.length > 0 ? uploadedFiles[0].name : 'Uploaded Market Report',
-                    excerpt: 'User-uploaded document with relevant rice market insights...',
-                    relevance: 0.92,
-                    source: 'uploaded',
-                    content: 'Content from uploaded document...'
-                },
-                {
-                    id: 3,
-                    title: 'Rice Import/Export Regulations Update',
-                    excerpt: 'Latest changes to international rice trade regulations...',
-                    relevance: 0.87,
-                    source: 'database',
-                    content: 'Detailed regulatory information...'
-                }
-            ]);
-        } catch (error) {
-            console.error('Search failed:', error);
+        try {
+            // Real API call to RAG service
+            const response = await queryRAG(searchQuery, 5);
+            setSearchResult({
+                query: searchQuery,
+                answer: response.answer,
+                sources: response.sources,
+                confidence: response.confidence,
+            });
+        } catch (err) {
+            setError(err.message || 'Search failed. Please try again.');
+            console.error('RAG search failed:', err);
         } finally {
             setIsSearching(false);
-        }
-    };
-
-    const handleSummarize = async (document) => {
-        setSelectedDoc(document);
-        setIsSummarizing(true);
-
-        try {
-            // Simulate RAG summarization combining context from multiple sources
-            await new Promise(resolve => setTimeout(resolve, 1200));
-
-            setSummary(`AI-Generated Summary: ${document.title}\n\n` +
-                `Source: ${document.source === 'uploaded' ? 'User Document' : 'Company Database'}\n\n` +
-                `Key Points:\n` +
-                `• Market trends indicate positive growth in Southeast Asian markets\n` +
-                `• Regulatory changes favor increased imports from verified suppliers\n` +
-                `• Weather conditions remain stable for next quarter production\n` +
-                `• Price volatility expected to decrease based on futures market analysis\n\n` +
-                `This summary was generated using RAG-based document analysis, combining information from ` +
-                `${document.source === 'uploaded' ? 'your uploaded documents' : 'the company knowledge base'} ` +
-                `with contextual understanding from the Rice Market AI System.`);
-        } catch (error) {
-            console.error('Summarization failed:', error);
-        } finally {
-            setIsSummarizing(false);
         }
     };
 
@@ -178,7 +165,12 @@ function DocumentSearch() {
             </nav>
 
             <h1>Document Search (RAG)</h1>
-            <p>Search and summarize rice market documents using AI</p>
+            <p>Search and query rice market documents using AI</p>
+
+            {/* Service status indicator */}
+            <div className={`service-status ${serviceStatus}`}>
+                RAG Service: {serviceStatus === 'online' ? '🟢 Online' : serviceStatus === 'offline' ? '🔴 Offline' : '🟡 Checking...'}
+            </div>
 
             {/* Document Management Section */}
             <div className="document-management">
@@ -200,30 +192,25 @@ function DocumentSearch() {
                                         <span className="file-icon">📄</span>
                                         <div className="file-info">
                                             <span className="file-name">{file.name}</span>
-                                            <span className="file-status">
-                                                {file.status === 'processing' ? (
-                                                    <LoadingSpinner size="small" message="Processing..." />
-                                                ) : (
-                                                    <span className="status-ready">✓ Ready</span>
-                                                )}
-                                            </span>
+                                            {file.status === 'uploading' && <span className="status-uploading">⏳ Uploading...</span>}
+                                            {file.status === 'ready' && <span className="status-ready">✓ Ready</span>}
+                                            {file.status === 'failed' && <span className="status-failed">✗ Failed</span>}
                                         </div>
-                                        <button
-                                            className="remove-file"
-                                            onClick={() => removeUploadedFile(file.id)}
-                                            aria-label="Remove file"
-                                        >
-                                            ×
-                                        </button>
+                                        {!file.fromBackend && (
+                                            <button
+                                                className="remove-file"
+                                                onClick={() => removeUploadedFile(file.id)}
+                                                aria-label="Remove file"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
-                    <button
-                        className="upload-btn"
-                        onClick={() => setShowUploadModal(true)}
-                    >
+                    <button className="upload-btn" onClick={() => setShowUploadModal(true)}>
                         + Add Documents
                     </button>
                 </div>
@@ -235,13 +222,15 @@ function DocumentSearch() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search across company database and your documents..."
-                    disabled={isSearching}
+                    placeholder="Ask a question about rice market documents..."
+                    disabled={isSearching || serviceStatus === 'offline'}
                 />
-                <button type="submit" disabled={isSearching}>
+                <button type="submit" disabled={isSearching || serviceStatus === 'offline'}>
                     {isSearching ? 'Searching...' : 'Search'}
                 </button>
             </form>
+
+            {error && <div className="error-message">{error}</div>}
 
             {/* Upload Modal */}
             {showUploadModal && (
@@ -249,19 +238,11 @@ function DocumentSearch() {
                     <div className="upload-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Add Sources</h2>
-                            <button
-                                className="close-modal"
-                                onClick={() => setShowUploadModal(false)}
-                            >
-                                ×
-                            </button>
+                            <button className="close-modal" onClick={() => setShowUploadModal(false)}>×</button>
                         </div>
-
                         <p className="modal-description">
-                            Sources let the AI base its responses on the information that matters most to you.
-                            (Examples: marketing plans, course reading, research notes, meeting transcripts, sales documents, etc.)
+                            Upload documents to include in your knowledge base for RAG queries.
                         </p>
-
                         <div
                             className={`drop-zone ${dragActive ? 'drag-active' : ''}`}
                             onDragEnter={handleDrag}
@@ -280,74 +261,50 @@ function DocumentSearch() {
                                             type="file"
                                             multiple
                                             onChange={handleFileSelect}
-                                            accept=".pdf,.txt,.md,.docx,.mp3"
-                                            style={{
-                                                position: 'absolute',
-                                                left: '-9999px',
-                                                visibility: 'hidden'
-                                            }}
+                                            accept=".pdf,.txt,.md,.docx"
+                                            style={{ position: 'absolute', left: '-9999px', visibility: 'hidden' }}
                                         />
                                     </label>
                                     {' '}to upload
                                 </p>
-                                <p className="file-types">
-                                    Supported file types: PDF, .txt, Markdown, Audio (e.g. mp3)
-                                </p>
+                                <p className="file-types">Supported: PDF, .txt, Markdown, .docx</p>
                             </div>
                         </div>
+                        {isUploading && <LoadingSpinner message="Processing and indexing documents..." size="medium" />}
+                    </div>
+                </div>
+            )}
 
-                        {isUploading && (
-                            <LoadingSpinner message="Processing documents..." size="medium" />
+            {/* Search Loading */}
+            {isSearching && <LoadingSpinner message="Searching knowledge base..." size="medium" />}
+
+            {/* Search Results */}
+            {searchResult && !isSearching && (
+                <div className="results-section">
+                    <h2>Answer</h2>
+                    <div className="rag-answer">
+                        <p>{searchResult.answer}</p>
+                        {searchResult.confidence > 0 && (
+                            <span className="confidence">
+                                Confidence: {(searchResult.confidence * 100).toFixed(0)}%
+                            </span>
                         )}
                     </div>
-                </div>
-            )}
-
-            {/* Search results */}
-            {isSearching && (
-                <LoadingSpinner message="Searching across all sources..." size="medium" />
-            )}
-
-            {documents.length > 0 && !selectedDoc && !isSearching && (
-                <div className="search-results">
-                    <h2>Search Results ({documents.length})</h2>
-                    <p className="results-description">
-                        Results from company database and uploaded documents
-                    </p>
-                    <div className="documents-grid">
-                        {documents.map(doc => (
-                            <DocumentCard
-                                key={doc.id}
-                                document={doc}
-                                onSelect={handleSummarize}
-                            >
-                                <span className="doc-icon">
-                                    {doc.source === 'uploaded' ? '📎' : '📄'}
-                                </span>
-                            </DocumentCard>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Summary display */}
-            {selectedDoc && (
-                <div className="summary-section">
-                    <button onClick={() => {
-                        setSelectedDoc(null);
-                        setSummary('');
-                    }}>← Back to Results</button>
-
-                    <h2>{selectedDoc.title}</h2>
-
-                    {isSummarizing ? (
-                        <LoadingSpinner message="Generating AI summary with RAG..." size="medium" />
-                    ) : (
-                        summary && (
-                            <div className="summary-content">
-                                <pre>{summary}</pre>
-                            </div>
-                        )
+                    {searchResult.sources?.length > 0 && (
+                        <div className="sources-section">
+                            <h3>Sources ({searchResult.sources.length})</h3>
+                            <ul>
+                                {searchResult.sources.map((source, idx) => (
+                                    <li key={idx}>
+                                        <strong>{source.metadata?.source || 'Unknown'}</strong>
+                                        {source.score && <span className="source-score"> (Score: {(source.score * 100).toFixed(0)}%)</span>}
+                                        {source.metadata?.content && (
+                                            <p className="source-content">{source.metadata.content.substring(0, 200)}...</p>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     )}
                 </div>
             )}

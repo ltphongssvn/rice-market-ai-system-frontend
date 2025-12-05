@@ -351,3 +351,13 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 - VITE_RAG_SERVICE_URL=https://api.thanhphongle.net/rag
 - VITE_FORECAST_SERVICE_URL=https://api.thanhphongle.net/forecast
 **Result:** ✅ Frontend now uses HTTPS Ingress endpoints
+
+### 2025-12-04 - GitHub Pages Deployment Success
+**Command:** `gh run list --repo ltphongssvn/rice-market-ai-system-frontend --limit 2`
+**Output:**
+```
+✓  docs: document HTTPS URL update  33s
+✓  feat: update production URLs to HTTPS Ingress endpoints  55s
+```
+**Result:** ✅ Deployments successful
+**Next:** Test https://kiwi.thanhphongle.net in browser

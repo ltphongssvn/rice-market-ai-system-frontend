@@ -311,3 +311,19 @@ curl -s http://34.42.16.142:8003/health
 - [ ] Document Search returns RAG answers
 - [ ] Forecasting displays charts and predictions
 - [ ] All service status indicators show green
+
+### 2025-12-04 - Squash Merge to Develop Complete
+**Commands:**
+```bash
+git checkout develop && git merge --squash feature/integrate_frontend_to_backend_onGKE
+git branch -d feature/integrate_frontend_to_backend_onGKE
+git push origin --delete feature/integrate_frontend_to_backend_onGKE
+git fetch --prune
+git commit -m "feat: integrate frontend with GKE backend APIs" && git push origin develop
+```
+**Result:** ✅ Feature branch squash-merged to develop and pushed
+**Deployed Files:**
+- .env.production (GKE backend URLs)
+- vite.config.js (code splitting)
+- README.md (documentation)
+**GitHub Pages:** Deployment triggered at http://kiwi.thanhphongle.net

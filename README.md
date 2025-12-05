@@ -369,3 +369,8 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 2. CSP blocking Cloudflare scripts
 
 **Fix Required:** Add 404.html for SPA routing on GitHub Pages
+
+### 2025-12-04 - SPA Routing Fix Added
+**File:** `public/404.html`
+**Fix:** Redirects unknown routes to `/` for React Router handling
+**Result:** ✅ 404.html created and deployed

@@ -361,3 +361,11 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 ```
 **Result:** ✅ Deployments successful
 **Next:** Test https://kiwi.thanhphongle.net in browser
+
+### 2025-12-04 - Browser Test Issues
+**URL:** https://kiwi.thanhphongle.net/forecasting
+**Issues:**
+1. 404 Not Found on `/forecasting` - SPA routing issue (GitHub Pages doesn't handle client-side routes)
+2. CSP blocking Cloudflare scripts
+
+**Fix Required:** Add 404.html for SPA routing on GitHub Pages

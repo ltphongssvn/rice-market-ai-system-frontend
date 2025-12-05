@@ -7,14 +7,10 @@ const AGENT_URL = import.meta.env.VITE_AGENT_SERVICE_URL || 'http://localhost:80
 
 /**
  * Execute a mission/query using agent coordinator
- * @param {string} query - Query to execute
- * @param {Object} context - Optional context
- * @returns {Promise<Object>} - Execution result
  */
 export const executeQuery = async (query, context = {}) => {
   const url = `${AGENT_URL}/execute`;
   const token = generateToken();
-  
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -23,26 +19,19 @@ export const executeQuery = async (query, context = {}) => {
     },
     body: JSON.stringify({ query, context }),
   });
-
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Execution failed' }));
     throw new Error(error.detail || 'Failed to execute query');
   }
-
   return response.json();
 };
 
 /**
  * Execute Level 4 mission with self-evolution
- * @param {string} mission - Mission description
- * @param {string} sessionId - Session ID
- * @param {Object} context - Optional context
- * @returns {Promise<Object>} - Execution result
  */
 export const executeMissionV4 = async (mission, sessionId, context = {}) => {
   const url = `${AGENT_URL}/mission/execute-v4`;
   const token = generateToken();
-  
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -51,66 +40,60 @@ export const executeMissionV4 = async (mission, sessionId, context = {}) => {
     },
     body: JSON.stringify({ mission, session_id: sessionId, context }),
   });
-
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Mission execution failed' }));
     throw new Error(error.detail || 'Failed to execute mission');
   }
-
   return response.json();
 };
 
 /**
  * Get list of registered agents
- * @returns {Promise<Object>} - List of agents
  */
 export const getAgents = async () => {
   const url = `${AGENT_URL}/agents`;
   const token = generateToken();
-  
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
   });
-
   if (!response.ok) {
     throw new Error('Failed to get agents');
   }
-
   return response.json();
 };
 
 /**
  * Get agent coordinator status
- * @returns {Promise<Object>} - Status info
  */
 export const getStatus = async () => {
   const url = `${AGENT_URL}/status`;
   const token = generateToken();
-  
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
   });
-
   if (!response.ok) {
     throw new Error('Failed to get status');
   }
-
   return response.json();
 };
 
 /**
- * Check agent coordinator health
- * @returns {Promise<Object>} - Health status
+ * Check agent coordinator health (with JWT authentication)
  */
 export const checkHealth = async () => {
   const url = `${AGENT_URL}/health`;
-  const response = await fetch(url);
+  const token = generateToken();
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
   return response.json();
 };
 

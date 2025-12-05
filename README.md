@@ -180,3 +180,134 @@ This project is created for educational purposes as part of a React development 
 - Built with Vite for optimal development experience
 - Designed to showcase integration with Google Cloud Platform services
 
+
+---
+
+## Backend API Integration (GKE)
+
+### 2025-12-04 - Integration Planning
+
+**GKE Backend Service Endpoints:**
+| Service | Port | External IP |
+|---------|------|-------------|
+| agent-coordinator | 8000 | 35.226.33.213 |
+| nl-sql-service | 8001 | 34.9.217.251 |
+| rag-orchestrator | 8002 | 136.114.222.124 |
+| ts-forecasting | 8003 | 34.42.16.142 |
+
+**Current Frontend Config (.env.local):**
+- VITE_NL_SQL_SERVICE_URL=http://localhost:8001
+- VITE_RAG_SERVICE_URL=http://localhost:8002
+- VITE_FORECAST_SERVICE_URL=http://localhost:8003
+
+**Required Updates:**
+- Update .env.local to point to GKE external IPs
+- Create .env.production for production deployment
+
+### 2025-12-04 - API Configuration Verified
+
+**src/services/api.js Analysis:**
+- Uses Vite env vars: `import.meta.env.VITE_*`
+- Fallback to localhost if env vars not set
+- JWT authentication with HMAC-SHA256
+- API_CONFIG exports: NL_SQL_URL, RAG_URL, FORECAST_URL
+
+**Vite Behavior:**
+- `.env.local` → used in `npm run dev`
+- `.env.production` → used in `npm run build`
+
+### 2025-12-04 - Build Failed - Missing recharts
+**Command:** `npm run build`
+**Error:**
+```
+Could not resolve entry module "recharts".
+```
+**Root Cause:** vite.config.js references 'recharts' in manualChunks but it's not installed
+**Next Step:** Check package.json for actual dependencies before configuring chunks
+
+### 2025-12-04 - Build Success with Code Splitting
+**Command:** `npm run build`
+**Output:**
+```
+dist/assets/vendor-BSL7p1-v.js   34.10 kB │ gzip: 12.12 kB
+dist/assets/index-CKL9RFHb.js   208.67 kB │ gzip: 64.99 kB
+dist/assets/crypto-DCDEN_Jk.js  302.42 kB │ gzip: 83.57 kB
+✓ built in 1.44s
+```
+**Result:** ✅ Build successful, all chunks under 500KB, no warnings
+
+### 2025-12-04 - GKE URLs Verified in Production Build
+**Command:** `grep -r "34.9.217.251" dist/`
+**Output:** Found in `dist/assets/index-CKL9RFHb.js`
+**Result:** ✅ GKE backend URLs successfully embedded in production build
+**Verified URLs:**
+- NL_SQL_URL: http://34.9.217.251:8001
+- RAG_URL: http://136.114.222.124:8002
+- FORECAST_URL: http://34.42.16.142:8003
+
+### 2025-12-04 - GKE Backend Health Check
+**Command:** `curl -s http://34.9.217.251:8001/health`
+**Output:** `{"status":"healthy","service":"nl-sql"}`
+**Result:** ✅ GKE backend nl-sql-service accessible and healthy
+
+### 2025-12-04 - All GKE Backend Services Healthy
+**Commands:**
+```bash
+curl -s http://136.114.222.124:8002/health
+curl -s http://34.42.16.142:8003/health
+```
+**Outputs:**
+```
+{"status":"healthy","service":"agentic-graph-rag","version":"2.1.0"}
+{"status":"healthy","service":"ts-forecasting","version":"2.1.0"}
+```
+**Result:** ✅ All 3 GKE backend services accessible and healthy
+- nl-sql-service: ✅
+- rag-orchestrator: ✅
+- ts-forecasting: ✅
+
+### 2025-12-04 - Production Build Preview Server
+**Command:** `npm run preview`
+**Output:** `Local: http://localhost:4173/`
+**Result:** ✅ Production build served locally for testing
+**Note:** Open http://localhost:4173 in browser to test frontend-to-GKE integration
+
+### 2025-12-04 - Manual Browser Test Queries
+
+**Test URL:** http://localhost:4173
+
+#### NL-SQL Service Tests (SQL-Only Mode)
+1. `Show all customers`
+2. `How many contracts are in the database?`
+3. `What is the average unit price from all contracts?`
+4. `List the top 5 suppliers by total shipments`
+5. `Show inventory movements from the last month`
+6. `What is the total quantity of rice in inventory?`
+7. `Count shipments by status`
+8. `Show all warehouses and their locations`
+
+#### RAG Service Tests (Document Search page)
+1. `What are the rice export regulations in Vietnam?`
+2. `Explain rice quality grading standards`
+3. `What factors affect rice prices?`
+4. `Summarize rice storage best practices`
+5. `What is the current market trend for jasmine rice?`
+
+#### Forecasting Service Tests (Forecasting page)
+1. Select 3-month horizon → verify chart renders
+2. Select 6-month horizon → verify predictions update
+3. Select 12-month horizon → verify confidence decreases for longer periods
+
+#### Multi-Agent Mode Tests (NL Query page - toggle ON)
+1. `How many customers and what is the rice price forecast?`
+2. `Show inventory levels and explain storage policies`
+3. `What is the average contract price and market outlook?`
+4. `List suppliers and summarize supply chain risks`
+
+**Test Checklist:**
+- [ ] Dashboard loads with stats from GKE
+- [ ] NL Query SQL mode returns data
+- [ ] NL Query Multi-Agent mode combines services
+- [ ] Document Search returns RAG answers
+- [ ] Forecasting displays charts and predictions
+- [ ] All service status indicators show green

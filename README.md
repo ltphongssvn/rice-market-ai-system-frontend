@@ -374,3 +374,12 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 **File:** `public/404.html`
 **Fix:** Redirects unknown routes to `/` for React Router handling
 **Result:** ✅ 404.html created and deployed
+
+### 2025-12-04 - Deployment Verified
+**Runs:**
+```
+✓  docs: document 404.html SPA routing fix  39s
+✓  fix: add 404.html for SPA routing on GitHub Pages  35s
+```
+**Result:** ✅ Deployments successful
+**Next:** Test https://kiwi.thanhphongle.net/forecasting in browser

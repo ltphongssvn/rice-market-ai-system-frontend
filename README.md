@@ -383,3 +383,9 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 ```
 **Result:** ✅ Deployments successful
 **Next:** Test https://kiwi.thanhphongle.net/forecasting in browser
+
+### 2025-12-04 - Browser Test - CORS Error
+**Issues:**
+1. `Access to fetch 'https://api.thanhphongle.net/nl-sql/query' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header`
+2. 401 Unauthorized (after CORS preflight fails)
+**Fix Required:** Add CORS headers to backend services

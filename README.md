@@ -338,3 +338,8 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 **Result:** ✅ GitHub Pages deployment successful
 **Live URL:** http://kiwi.thanhphongle.net
 **Next:** Manual browser testing against GKE backends
+
+### 2025-12-04 - Browser Test FAILED - Mixed Content Error
+**Issue:** `Mixed Content: The page at 'https://kiwi.thanhphongle.net/' was loaded over HTTPS, but requested an insecure resource 'http://34.9.217.251:8001/query'. This request has been blocked.`
+**Root Cause:** GitHub Pages serves over HTTPS, but GKE LoadBalancers serve HTTP. Browsers block HTTP requests from HTTPS pages.
+**Fix Required:** Configure HTTPS on GKE backends (Ingress with TLS certificates)

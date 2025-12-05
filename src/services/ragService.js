@@ -6,7 +6,7 @@ import API_CONFIG, { apiFetch, generateToken } from './api.js';
  * Send query to RAG service for document search
  */
 export const queryRAG = async (query, maxResults = 5) => {
-  const url = `${API_CONFIG.RAG_URL}/rag/query`;
+  const url = `${API_CONFIG.RAG_URL}/query`;
   const response = await apiFetch(url, {
     method: 'POST',
     body: JSON.stringify({ query, max_results: maxResults }),
@@ -24,7 +24,7 @@ export const queryRAG = async (query, maxResults = 5) => {
  * Upload document to RAG knowledge base
  */
 export const uploadDocument = async (file) => {
-  const url = `${API_CONFIG.RAG_URL}/rag/upload`;
+  const url = `${API_CONFIG.RAG_URL}/upload`;
   const formData = new FormData();
   formData.append('file', file);
   const token = generateToken();
@@ -44,7 +44,7 @@ export const uploadDocument = async (file) => {
  * Get list of indexed documents
  */
 export const getDocuments = async () => {
-  const url = `${API_CONFIG.RAG_URL}/rag/documents`;
+  const url = `${API_CONFIG.RAG_URL}/documents`;
   return apiFetch(url, { method: 'GET' });
 };
 
@@ -52,7 +52,7 @@ export const getDocuments = async () => {
  * Delete a specific document from knowledge base
  */
 export const deleteDocument = async (filename) => {
-  const url = `${API_CONFIG.RAG_URL}/rag/documents/${encodeURIComponent(filename)}`;
+  const url = `${API_CONFIG.RAG_URL}/documents/${encodeURIComponent(filename)}`;
   const token = generateToken();
   const response = await fetch(url, {
     method: 'DELETE',
@@ -69,7 +69,7 @@ export const deleteDocument = async (filename) => {
  * Delete all documents from knowledge base
  */
 export const deleteAllDocuments = async () => {
-  const url = `${API_CONFIG.RAG_URL}/rag/documents`;
+  const url = `${API_CONFIG.RAG_URL}/documents`;
   const token = generateToken();
   const response = await fetch(url, {
     method: 'DELETE',
@@ -86,7 +86,7 @@ export const deleteAllDocuments = async () => {
  * Get RAG service statistics
  */
 export const getStats = async () => {
-  const url = `${API_CONFIG.RAG_URL}/rag/stats`;
+  const url = `${API_CONFIG.RAG_URL}/stats`;
   return apiFetch(url, { method: 'GET' });
 };
 

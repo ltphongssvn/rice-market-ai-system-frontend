@@ -343,3 +343,11 @@ git commit -m "feat: integrate frontend with GKE backend APIs" && git push origi
 **Issue:** `Mixed Content: The page at 'https://kiwi.thanhphongle.net/' was loaded over HTTPS, but requested an insecure resource 'http://34.9.217.251:8001/query'. This request has been blocked.`
 **Root Cause:** GitHub Pages serves over HTTPS, but GKE LoadBalancers serve HTTP. Browsers block HTTP requests from HTTPS pages.
 **Fix Required:** Configure HTTPS on GKE backends (Ingress with TLS certificates)
+
+### 2025-12-04 - Frontend Updated with HTTPS URLs
+**File:** `.env.production`
+**Updated URLs:**
+- VITE_NL_SQL_SERVICE_URL=https://api.thanhphongle.net/nl-sql
+- VITE_RAG_SERVICE_URL=https://api.thanhphongle.net/rag
+- VITE_FORECAST_SERVICE_URL=https://api.thanhphongle.net/forecast
+**Result:** ✅ Frontend now uses HTTPS Ingress endpoints

@@ -146,7 +146,7 @@
 
 /* Natural Language Query Page Styles */
 .nl-query-container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     animation: fadeIn 0.5s ease;
     width: 100%;
@@ -267,6 +267,7 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-top: 2rem;
     width: 100%;
+    overflow-x: auto;
 }
 
 .sql-display {
@@ -298,6 +299,7 @@ th, td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 tbody tr:hover {
@@ -556,6 +558,8 @@ tbody tr:hover {
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
 }
 
 .data-table thead {
@@ -567,12 +571,14 @@ tbody tr:hover {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .data-table td {
     padding: 1rem;
     border-bottom: 1px solid #e2e8f0;
     color: #333;
+    white-space: nowrap;
 }
 
 .data-table tbody tr:hover {
